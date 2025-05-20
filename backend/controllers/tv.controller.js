@@ -30,14 +30,25 @@ export const getTvShowTrailers = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await fetchFromTMDB(`https://api.themoviedb.org/3/tv/${id}/videos?&language=en-US`);
+
+    // Find all S3 resolutions for this TV show
+    const s3Resolutions = [];
+    for (const key in trailerMap) {
+      if (key.startsWith(id + '_')) {
+        const label = key.split('_')[1].replace('.mp4', '');
+        s3Resolutions.push({
+          label,
+          url: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[key]}`,
+        });
+      }
+    }
+
     let trailers = data.results.map((trailer) => ({
       ...trailer,
-      s3VideoUrl: trailerMap[trailer.key]
-        ? `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[trailer.key]}`
-        : null,
+      s3Resolutions: [],
     }));
 
-    if (trailerMap[id]) {
+    if (s3Resolutions.length > 0) {
       trailers = [
         {
           id: `s3-${id}`,
@@ -45,7 +56,7 @@ export const getTvShowTrailers = async (req, res) => {
           name: 'Uploaded Trailer',
           site: 'S3',
           type: 'Trailer',
-          s3VideoUrl: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[id]}`,
+          s3Resolutions,
         },
         ...trailers,
       ];

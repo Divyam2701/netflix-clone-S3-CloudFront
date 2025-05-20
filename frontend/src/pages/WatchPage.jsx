@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import axios from 'axios';
+import Hls from 'hls.js';
 
 import Navbar from '../components/Navbar';
 import SimilarContent from '../components/SimilarContent';
@@ -17,6 +18,11 @@ const WatchPage = () => {
   const [trailers, setTrailers] = useState([]);
   const [content, setContent] = useState({});
   const [currentTrailerIndex, setCurrentTrailerIndex] = useState(0);
+  const [selectedResolution, setSelectedResolution] = useState(null);
+  const [mp4Url, setMp4Url] = useState(null);
+  const [fakeResolution, setFakeResolution] = useState('1080p');
+  const [hlsUrl, setHlsUrl] = useState(null);
+  const videoRef = useRef(null);
 
   const { contentType } = useContentStore();
 
@@ -51,6 +57,28 @@ const WatchPage = () => {
     };
     getContentDetails();
   }, [contentType, id]);
+
+  useEffect(() => {
+    // When trailers are loaded, check for hlsMasterUrl
+    if (trailers.length > 0) {
+      const s3Trailer = trailers.find(t => t.hlsMasterUrl);
+      if (s3Trailer) setHlsUrl(s3Trailer.hlsMasterUrl);
+      else setHlsUrl(null);
+    }
+  }, [trailers]);
+
+  useEffect(() => {
+    if (hlsUrl && videoRef.current) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(videoRef.current);
+        return () => hls.destroy();
+      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        videoRef.current.src = hlsUrl;
+      }
+    }
+  }, [hlsUrl]);
 
   const handleNext = () => {
     if (currentTrailerIndex < trailers.length - 1) setCurrentTrailerIndex(currentTrailerIndex + 1);
@@ -99,22 +127,16 @@ const WatchPage = () => {
 
                 {/* video player */}
                 <div className="aspect-video p-2 sm:px-10 md:px-32">
-                  {trailers.length > 0 && (() => {
-                    // Prefer S3 trailer if available
-                    const s3Trailer = trailers.find(t => t.s3VideoUrl);
-                    if (s3Trailer) {
-                      return (
-                        <ReactPlayer
-                          controls={true}
-                          width={'100%'}
-                          height={'70vh'}
-                          className="mx-auto overflow-hidden rounded-lg"
-                          url={s3Trailer.s3VideoUrl}
-                        />
-                      );
-                    }
-                    // fallback to YouTube for current trailer
-                    return (
+                  {hlsUrl ? (
+                    <video
+                      ref={videoRef}
+                      controls
+                      width="100%"
+                      height="70vh"
+                      className="mx-auto overflow-hidden rounded-lg"
+                    />
+                  ) : (
+                    trailers.length > 0 && (
                       <ReactPlayer
                         controls={true}
                         width={'100%'}
@@ -122,9 +144,8 @@ const WatchPage = () => {
                         className="mx-auto overflow-hidden rounded-lg"
                         url={`https://www.youtube.com/watch?v=${trailers[currentTrailerIndex].key}`}
                       />
-                    );
-                  })()}
-
+                    )
+                  )}
                   {trailers.length === 0 && (
                     <h2 className="text-xl text-center mt-5">
                       No trailers available for{' '}

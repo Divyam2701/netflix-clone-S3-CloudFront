@@ -33,16 +33,30 @@ export const getMovieTrailers = async (req, res) => {
     const { id } = req.params;
     const data = await fetchFromTMDB(`https://api.themoviedb.org/3/movie/${id}/videos?&language=en-US`);
 
-    // Map S3 videos by YouTube key (will almost always be null)
+    // Find all S3 resolutions for this movie
+    const s3Resolutions = [];
+    for (const key in trailerMap) {
+      if (key.startsWith(id + '_')) {
+        const label = key.split('_')[1].replace('.mp4', '');
+        s3Resolutions.push({
+          label,
+          url: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[key]}`,
+        });
+      }
+    }
+
+    // Check if HLS master playlist exists in S3 (trailerMap or by convention)
+    // If you use a trailerMap.json, you can look up id -> path
+    // Otherwise, just construct the path:
+    const hlsMasterUrl = `${ENV_VARS.CLOUDFRONT_URL}/trailers/${id}/master.m3u8`;
+
     let trailers = data.results.map((trailer) => ({
       ...trailer,
-      s3VideoUrl: trailerMap[trailer.key]
-        ? `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[trailer.key]}`
-        : null,
+      s3Resolutions: [],
     }));
 
-    // If an S3 video exists for this movie ID, inject a virtual trailer at the start
-    if (trailerMap[id]) {
+    // If S3 resolutions exist, inject a virtual trailer
+    if (s3Resolutions.length > 0) {
       trailers = [
         {
           id: `s3-${id}`,
@@ -50,7 +64,7 @@ export const getMovieTrailers = async (req, res) => {
           name: 'Uploaded Trailer',
           site: 'S3',
           type: 'Trailer',
-          s3VideoUrl: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[id]}`,
+          hlsMasterUrl,
         },
         ...trailers,
       ];
