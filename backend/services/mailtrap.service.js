@@ -23,7 +23,16 @@ const EMAIL_TEMPLATE_IDS = {
   // If you have additional templates, define them here.
 };
 
-const EMAIL_TEMPLATE_VARIABLES = JSON.parse(process.env.EMAIL_TEMPLATE_VARIABLES);
+// --- Safe parsing for EMAIL_TEMPLATE_VARIABLES ---
+let EMAIL_TEMPLATE_VARIABLES = {};
+try {
+  if (process.env.EMAIL_TEMPLATE_VARIABLES) {
+    EMAIL_TEMPLATE_VARIABLES = JSON.parse(process.env.EMAIL_TEMPLATE_VARIABLES);
+  }
+} catch (e) {
+  console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
+  EMAIL_TEMPLATE_VARIABLES = {};
+}
 
 // -------------------------------------------------------------------
 // Mailtrap Client
