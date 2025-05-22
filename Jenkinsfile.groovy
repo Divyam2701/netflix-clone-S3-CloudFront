@@ -1,4 +1,3 @@
-// Jenkinsfile
 pipeline {
     agent any
 
@@ -6,14 +5,14 @@ pipeline {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        BACKEND_HOST = '<EC2_BACKEND_IP>'
+        BACKEND_HOST = '3.101.125.232' // Replace with your backend EC2 public IP or DNS
         BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git'
+                git branch: 'main', url: 'https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git' // Replace with your new repo URL
             }
         }
         stage('Build & Push Frontend Docker Image') {
@@ -40,10 +39,14 @@ pipeline {
                 sshagent(['backend-ec2-ssh-key']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@$BACKEND_HOST '
-                        cd /home/ubuntu/netflix-clone-S3-CloudFront &&
+                        # If the backend directory does not exist, clone it
+                        if [ ! -d "/home/ubuntu/netflix-backend" ]; then
+                            git clone <NEW_GITHUB_REPO_URL> /home/ubuntu/netflix-backend
+                        fi
+                        cd /home/ubuntu/netflix-backend &&
                         git pull origin main &&
                         npm install --production &&
-                        pm2 restart all
+                        pm2 startOrRestart ecosystem.config.js || pm2 restart all
                     '
                     '''
                 }
