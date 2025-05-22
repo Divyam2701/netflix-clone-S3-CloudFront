@@ -28,6 +28,9 @@ export const expressServer = () => {
   // Creates an Express application instance.
   const app = express();
 
+  // Health check endpoint for ALB
+  app.get('/health', (req, res) => res.status(200).send('OK'));
+
   /**
    * Configures and applies the CORS middleware to the Express application instance.
    * getClientUrl is a function that retrieves the client's base URL. (e.g. http://localhost:5173)
@@ -35,7 +38,7 @@ export const expressServer = () => {
   const baseURL = getClientUrl();
   app.use(
     cors({
-      origin: baseURL,
+      origin: baseURL, // should be your frontend URL, e.g. https://netflixer.corelynx.me
       methods: ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'UPDATE', 'DELETE'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],

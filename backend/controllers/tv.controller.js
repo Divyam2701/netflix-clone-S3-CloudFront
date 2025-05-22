@@ -1,6 +1,7 @@
 import { fetchFromTMDB } from '../services/tmdb.service.js';
 import { ENV_VARS } from '../config/env.config.js';
-import trailerMap from '../../data/trailerMap.json' assert { type: 'json' }; // add this import
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Fetches a (random) trending tv-show from The Movie Database (TMDB) and returns it.
@@ -31,24 +32,30 @@ export const getTvShowTrailers = async (req, res) => {
     const { id } = req.params;
     const data = await fetchFromTMDB(`https://api.themoviedb.org/3/tv/${id}/videos?&language=en-US`);
 
-    // Find all S3 resolutions for this TV show
-    const s3Resolutions = [];
+    // Dynamically load trailerMap.json if it exists
+    const trailerMapPath = path.resolve('data', 'trailerMap.json');
+    let trailerMap = {};
+    if (fs.existsSync(trailerMapPath)) {
+      trailerMap = JSON.parse(fs.readFileSync(trailerMapPath, 'utf-8'));
+    }
+
+    // Check if S3 MP4 exists for this TV show
+    const s3Key = `trailers/${id}.mp4`;
+    const s3Url = `${ENV_VARS.CLOUDFRONT_URL}/${s3Key}`;
+    let s3Exists = false;
     for (const key in trailerMap) {
-      if (key.startsWith(id + '_')) {
-        const label = key.split('_')[1].replace('.mp4', '');
-        s3Resolutions.push({
-          label,
-          url: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[key]}`,
-        });
+      if (key === `${id}.mp4` || trailerMap[key] === s3Key) {
+        s3Exists = true;
+        break;
       }
     }
 
     let trailers = data.results.map((trailer) => ({
       ...trailer,
-      s3Resolutions: [],
+      s3Url: null,
     }));
 
-    if (s3Resolutions.length > 0) {
+    if (s3Exists) {
       trailers = [
         {
           id: `s3-${id}`,
@@ -56,7 +63,7 @@ export const getTvShowTrailers = async (req, res) => {
           name: 'Uploaded Trailer',
           site: 'S3',
           type: 'Trailer',
-          s3Resolutions,
+          s3Url,
         },
         ...trailers,
       ];

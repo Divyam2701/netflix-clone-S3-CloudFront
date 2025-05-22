@@ -85,10 +85,14 @@ export const generateTokenAndSetCookie = (payload, res) => {
   // Set a cookie with the token
   let options = {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    httpOnly: true, // secure cookie only accessible via HTTP, prevent XSS attacks cross-site scripting attacks, make it not be accessed by JS
-    secure: ENV_VARS.NODE_ENV === 'production', // secure cookie only accessible over HTTPS (default is development)
-    sameSite: 'strict', // prevent CSRF attacks cross-site request forgery attacks
+    httpOnly: true,
+    secure: ENV_VARS.NODE_ENV === 'production',
+    sameSite: ENV_VARS.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
   };
+  if (ENV_VARS.NODE_ENV === 'production') {
+    options.domain = '.corelynx.me'; // <-- set to root domain for all subdomains
+  }
   res.cookie('netflixToken', token, options);
 
   return token;

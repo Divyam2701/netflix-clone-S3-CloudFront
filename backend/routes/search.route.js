@@ -64,4 +64,5 @@ router.delete('/history/:id', removeFromSearchHistory);
 /**
  * Export the Express Router instance for search routes.
  */
+// All routes here expect req.user to be set by the authentication middleware
 export default router;

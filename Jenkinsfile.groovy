@@ -1,0 +1,53 @@
+// Jenkinsfile
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-west-1'
+        ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        BACKEND_HOST = '<EC2_BACKEND_IP>'
+        BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git'
+            }
+        }
+        stage('Build & Push Frontend Docker Image') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+                    docker build -t $ECR_REPO:$IMAGE_TAG .
+                    docker push $ECR_REPO:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+        stage('Deploy Frontend to ECS') {
+            steps {
+                sh '''
+                aws ecs update-service --cluster netflix-cluster --service netflix-frontend-service \
+                  --force-new-deployment --region $AWS_REGION
+                '''
+            }
+        }
+        stage('Deploy Backend to EC2') {
+            steps {
+                sshagent(['backend-ec2-ssh-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@$BACKEND_HOST '
+                        cd /home/ubuntu/netflix-clone-S3-CloudFront &&
+                        git pull origin main &&
+                        npm install --production &&
+                        pm2 restart all
+                    '
+                    '''
+                }
+            }
+        }
+    }
+}

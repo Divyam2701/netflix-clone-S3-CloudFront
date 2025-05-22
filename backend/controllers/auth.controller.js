@@ -136,7 +136,14 @@ export const login = async (req, res) => {
  * authentication token from the client's cookie.
  */
 export const logout = async (req, res) => {
-  res.clearCookie('netflixToken');
+  // Clear cookie with same options as set
+  res.clearCookie('netflixToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    domain: process.env.NODE_ENV === 'production' ? '.netflixer.corelynx.me' : undefined, // <-- leading dot
+    path: '/',
+  });
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 

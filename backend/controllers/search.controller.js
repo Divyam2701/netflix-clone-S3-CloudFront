@@ -14,8 +14,11 @@ async function saveSearchResults(type, userId, id, name, image) {
   try {
     const history = await User.findById(userId).select('searchHistory');
 
+    // Ensure user exists before accessing searchHistory
+    if (!history) return;
+
     // Check if search result already exists in the user's profile
-    const hasData = history?.searchHistory.find((searchResult) => searchResult.id === id);
+    const hasData = history.searchHistory && history.searchHistory.find((searchResult) => searchResult.id === id);
     if (hasData) return;
 
     // Save search result in the user's profile in the database
@@ -38,6 +41,11 @@ async function saveSearchResults(type, userId, id, name, image) {
 // Search for people by name
 export const searchPerson = async (req, res) => {
   try {
+    console.log('req.user in searchPerson:', req.user); // debug log
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: req.user missing' });
+    }
+
     const { query } = req.params;
     const response = await fetchFromTMDB(
       `https://api.themoviedb.org/3/search/person?query=${query}&language=en-US&page=1`
@@ -61,6 +69,11 @@ export const searchPerson = async (req, res) => {
 // Search for movies by title
 export const searchMovie = async (req, res) => {
   try {
+    console.log('req.user in searchMovie:', req.user); // debug log
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: req.user missing' });
+    }
+
     const { query } = req.params;
     const response = await fetchFromTMDB(
       `https://api.themoviedb.org/3/search/movie?query=${query}&language=en-US&page=1`
@@ -84,6 +97,11 @@ export const searchMovie = async (req, res) => {
 // Search for TV shows by title
 export const searchTvShow = async (req, res) => {
   try {
+    console.log('req.user in searchTvShow:', req.user); // debug log
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: req.user missing' });
+    }
+
     const { query } = req.params;
     const response = await fetchFromTMDB(`https://api.themoviedb.org/3/search/tv?query=${query}&language=en-US&page=1`);
 
@@ -105,6 +123,11 @@ export const searchTvShow = async (req, res) => {
 // Get the search history
 export const getSearchHistory = async (req, res) => {
   try {
+    console.log('req.user in getSearchHistory:', req.user); // debug log
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: req.user missing' });
+    }
+
     const searchHistory = await User.findById(req.user._id).select('searchHistory');
 
     // Check if the user has no search history in the database return empty string with no results
@@ -121,6 +144,11 @@ export const getSearchHistory = async (req, res) => {
 // Remove a search result from the user's search history in the database
 export const removeFromSearchHistory = async (req, res) => {
   try {
+    console.log('req.user in removeFromSearchHistory:', req.user); // debug log
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: req.user missing' });
+    }
+
     let { id } = req.params;
     // Convert string ID to integer
     id = parseInt(id);

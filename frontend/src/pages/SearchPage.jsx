@@ -8,12 +8,14 @@ import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import CustomToast from '../components/CustomToast';
 import { useContentStore } from '../store/content.store.js';
+import { useAuthStore } from '../store/auth.store.js';
 
 const SearchPage = () => {
   const [activeTab, setActiveTab] = useState('movie');
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
   const { setContentType } = useContentStore();
+  const { user } = useAuthStore();
 
   /**
    * Handles the tab change event in the search page.
@@ -34,11 +36,18 @@ const SearchPage = () => {
    */
   const handleSearch = async (e) => {
     e.preventDefault();
+    if (!user) {
+      toast.error('You must be logged in to search.');
+      return;
+    }
     try {
-      const res = await axios.get(`/api/v1/search/${activeTab}/${searchTerm}`);
+      const res = await axios.get(
+        `/api/v1/search/${activeTab}/${searchTerm}`,
+        { withCredentials: true }
+      );
       setResults(res.data.content);
     } catch (error) {
-      if (error.response.status === 404) {
+      if (error.response && error.response.status === 404) {
         CustomToast({
           icon: '⚠️',
           title: 'No results found!',
@@ -50,7 +59,6 @@ const SearchPage = () => {
     }
   };
 
-  // Page Component
   return (
     <div className="text-white bg-black min-h-screen">
       <Navbar />

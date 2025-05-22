@@ -1,6 +1,7 @@
 import { fetchFromTMDB } from '../services/tmdb.service.js';
 import { ENV_VARS } from '../config/env.config.js';
-import trailerMap from '../../data/trailerMap.json' assert { type: 'json' }; // { "603": "trailers/603.mp4", ... }
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Fetches a random trending movie from The Movie Database (TMDB) and returns it.
@@ -33,30 +34,31 @@ export const getMovieTrailers = async (req, res) => {
     const { id } = req.params;
     const data = await fetchFromTMDB(`https://api.themoviedb.org/3/movie/${id}/videos?&language=en-US`);
 
-    // Find all S3 resolutions for this movie
-    const s3Resolutions = [];
+    // Dynamically load trailerMap.json if it exists
+    const trailerMapPath = path.resolve('data', 'trailerMap.json');
+    let trailerMap = {};
+    if (fs.existsSync(trailerMapPath)) {
+      trailerMap = JSON.parse(fs.readFileSync(trailerMapPath, 'utf-8'));
+    }
+
+    // Check if S3 MP4 exists for this movie
+    const s3Key = `trailers/${id}.mp4`;
+    const s3Url = `${ENV_VARS.CLOUDFRONT_URL}/${s3Key}`;
+    let s3Exists = false;
     for (const key in trailerMap) {
-      if (key.startsWith(id + '_')) {
-        const label = key.split('_')[1].replace('.mp4', '');
-        s3Resolutions.push({
-          label,
-          url: `${ENV_VARS.CLOUDFRONT_URL}/${trailerMap[key]}`,
-        });
+      if (key === `${id}.mp4` || trailerMap[key] === s3Key) {
+        s3Exists = true;
+        break;
       }
     }
 
-    // Check if HLS master playlist exists in S3 (trailerMap or by convention)
-    // If you use a trailerMap.json, you can look up id -> path
-    // Otherwise, just construct the path:
-    const hlsMasterUrl = `${ENV_VARS.CLOUDFRONT_URL}/trailers/${id}/master.m3u8`;
-
     let trailers = data.results.map((trailer) => ({
       ...trailer,
-      s3Resolutions: [],
+      s3Url: null,
     }));
 
-    // If S3 resolutions exist, inject a virtual trailer
-    if (s3Resolutions.length > 0) {
+    // If S3 video exists, inject a virtual trailer
+    if (s3Exists) {
       trailers = [
         {
           id: `s3-${id}`,
@@ -64,7 +66,7 @@ export const getMovieTrailers = async (req, res) => {
           name: 'Uploaded Trailer',
           site: 'S3',
           type: 'Trailer',
-          hlsMasterUrl,
+          s3Url,
         },
         ...trailers,
       ];

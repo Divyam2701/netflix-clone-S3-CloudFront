@@ -6,7 +6,7 @@ export const protectedRoute = async (req, res, next) => {
   try {
     // Extract the authentication token from the cookie
     const token = req.cookies.netflixToken;
-
+    
     // If no token is present, return an unauthorized response
     if (!token) {
       return res.status(401).json({ success: false, message: 'Unauthorized - token not provided' });
@@ -26,8 +26,10 @@ export const protectedRoute = async (req, res, next) => {
     const user = await User.findById(decoded.payload).select('-password');
 
     // check if user exists then attach the user to the request and call the next function
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    req.user = user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    req.user = user; // <-- this is required!
     next();
   } catch (error) {
     console.log('An error occurred in protectedRoute middleware:', error.message);

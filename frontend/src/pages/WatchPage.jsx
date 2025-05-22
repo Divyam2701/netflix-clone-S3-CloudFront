@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import axios from 'axios';
-import Hls from 'hls.js';
 
 import Navbar from '../components/Navbar';
 import SimilarContent from '../components/SimilarContent';
@@ -18,10 +17,7 @@ const WatchPage = () => {
   const [trailers, setTrailers] = useState([]);
   const [content, setContent] = useState({});
   const [currentTrailerIndex, setCurrentTrailerIndex] = useState(0);
-  const [selectedResolution, setSelectedResolution] = useState(null);
   const [mp4Url, setMp4Url] = useState(null);
-  const [fakeResolution, setFakeResolution] = useState('1080p');
-  const [hlsUrl, setHlsUrl] = useState(null);
   const videoRef = useRef(null);
 
   const { contentType } = useContentStore();
@@ -33,8 +29,12 @@ const WatchPage = () => {
       try {
         const res = await axios.get(`/api/v1/${contentType}/${id}/trailers`);
         setTrailers(res.data.content);
+        // Find S3 trailer (with s3Url)
+        const s3Trailer = res.data.content.find(t => t.s3Url);
+        setMp4Url(s3Trailer ? s3Trailer.s3Url : null);
       } catch (error) {
         if (error.message.includes('404')) setTrailers([]);
+        setMp4Url(null);
       } finally {
         setLoading(false);
       }
@@ -58,28 +58,6 @@ const WatchPage = () => {
     getContentDetails();
   }, [contentType, id]);
 
-  useEffect(() => {
-    // When trailers are loaded, check for hlsMasterUrl
-    if (trailers.length > 0) {
-      const s3Trailer = trailers.find(t => t.hlsMasterUrl);
-      if (s3Trailer) setHlsUrl(s3Trailer.hlsMasterUrl);
-      else setHlsUrl(null);
-    }
-  }, [trailers]);
-
-  useEffect(() => {
-    if (hlsUrl && videoRef.current) {
-      if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(videoRef.current);
-        return () => hls.destroy();
-      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = hlsUrl;
-      }
-    }
-  }, [hlsUrl]);
-
   const handleNext = () => {
     if (currentTrailerIndex < trailers.length - 1) setCurrentTrailerIndex(currentTrailerIndex + 1);
   };
@@ -95,7 +73,7 @@ const WatchPage = () => {
         </div>
       ) : (
         <div className="bg-black text-white min-h-screen">
-          <div className="mx-auto container px-4 py-8 h-full">
+          <div className="mx-auto container px-4 py-8">
             <Navbar />
             {!content ? (
               <div className="text-center mx-auto px-4 py-8  mt-40">
@@ -126,24 +104,26 @@ const WatchPage = () => {
                 )}
 
                 {/* video player */}
-                <div className="aspect-video p-2 sm:px-10 md:px-32">
-                  {hlsUrl ? (
+                <div className="w-full flex justify-center items-center my-4">
+                  {mp4Url ? (
                     <video
-                      ref={videoRef}
                       controls
-                      width="100%"
-                      height="70vh"
-                      className="mx-auto overflow-hidden rounded-lg"
+                      className="w-full max-w-4xl h-auto rounded-lg mx-auto"
+                      src={mp4Url}
+                      style={{ maxHeight: '70vh', objectFit: 'contain' }}
                     />
                   ) : (
                     trailers.length > 0 && (
-                      <ReactPlayer
-                        controls={true}
-                        width={'100%'}
-                        height={'70vh'}
-                        className="mx-auto overflow-hidden rounded-lg"
-                        url={`https://www.youtube.com/watch?v=${trailers[currentTrailerIndex].key}`}
-                      />
+                      <div className="w-full flex justify-center">
+                        <ReactPlayer
+                          controls={true}
+                          width="100%"
+                          height="70vh"
+                          style={{ maxWidth: '100%', maxHeight: '70vh' }}
+                          className="mx-auto rounded-lg"
+                          url={`https://www.youtube.com/watch?v=${trailers[currentTrailerIndex].key}`}
+                        />
+                      </div>
                     )
                   )}
                   {trailers.length === 0 && (
