@@ -38,7 +38,7 @@ pipeline {
             steps {
                 sshagent(['backend-ec2-ssh-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@$BACKEND_HOST '
+                    ssh -o StrictHostKeyChecking=no ubuntu@$BACKEND_HOST '
                         # If the backend directory does not exist, clone it
                         if [ ! -d "/home/ubuntu/netflix-backend" ]; then
                             git clone <NEW_GITHUB_REPO_URL> /home/ubuntu/netflix-backend
