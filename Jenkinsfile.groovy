@@ -29,7 +29,7 @@ pipeline {
         stage('Deploy Frontend to ECS') {
             steps {
                 sh '''
-                aws ecs update-service --cluster netflix-cluster --service netflix-frontend-service \
+                aws ecs update-service --cluster Netflix-clone --service netflix-clone-service-1 \
                   --force-new-deployment --region $AWS_REGION
                 '''
             }
