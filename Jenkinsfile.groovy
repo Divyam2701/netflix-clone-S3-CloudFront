@@ -5,7 +5,7 @@ pipeline {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        BACKEND_HOST = '3.101.125.232' // Replace with your backend EC2 public IP or DNS
+        BACKEND_HOST = '3.101.125.232' // Your backend EC2 public IP or DNS
         BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
     }
 
@@ -39,11 +39,7 @@ pipeline {
                 sshagent(['backend-ec2-ssh-key']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@$BACKEND_HOST '
-                        # If the backend directory does not exist, clone it
-                        if [ ! -d "/home/ubuntu/netflix-backend" ]; then
-                            git clone https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git /home/ubuntu/netflix-backend
-                        fi
-                        cd /home/ubuntu/netflix-backend &&
+                        cd /home/ubuntu/netflix-clone-S3-CloudFront &&
                         git pull origin main &&
                         npm install --production
 
