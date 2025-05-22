@@ -41,7 +41,7 @@ pipeline {
                     ssh -o StrictHostKeyChecking=no ubuntu@$BACKEND_HOST '
                         # If the backend directory does not exist, clone it
                         if [ ! -d "/home/ubuntu/netflix-backend" ]; then
-                            git clone <NEW_GITHUB_REPO_URL> /home/ubuntu/netflix-backend
+                            git clone https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git /home/ubuntu/netflix-backend
                         fi
                         cd /home/ubuntu/netflix-backend &&
                         git pull origin main &&
