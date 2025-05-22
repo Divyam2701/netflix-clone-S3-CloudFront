@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git' // Replace with your new repo URL
+                git branch: 'main', url: 'https://github.com/Divyam2701/netflix-clone-S3-CloudFront.git'
             }
         }
         stage('Build & Push Frontend Docker Image') {
@@ -45,8 +45,14 @@ pipeline {
                         fi
                         cd /home/ubuntu/netflix-backend &&
                         git pull origin main &&
-                        npm install --production &&
-                        pm2 startOrRestart ecosystem.config.js || pm2 restart all
+                        npm install --production
+
+                        # PM2: restart if running, start if not
+                        if pm2 list | grep -q "netflix-backend"; then
+                            pm2 restart netflix-backend
+                        else
+                            pm2 start npm --name "netflix-backend" -- run start
+                        fi
                     '
                     '''
                 }
