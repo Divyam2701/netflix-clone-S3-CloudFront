@@ -29,13 +29,23 @@ const EMAIL_TEMPLATE_IDS = {
   // If you have additional templates, define them here.
 };
 
-// --- Safe parsing for EMAIL_TEMPLATE_VARIABLES ---
+// --- Safe parsing for EMAIL_TEMPLATE_VARIABLES with logging and extra safety ---
 let EMAIL_TEMPLATE_VARIABLES = {};
+const rawTemplateVars = process.env.EMAIL_TEMPLATE_VARIABLES;
+
+// Debug: Log the raw environment variable for troubleshooting
+console.log('Loaded EMAIL_TEMPLATE_VARIABLES raw value:', rawTemplateVars);
+
 try {
-  if (process.env.EMAIL_TEMPLATE_VARIABLES) {
-    EMAIL_TEMPLATE_VARIABLES = JSON.parse(process.env.EMAIL_TEMPLATE_VARIABLES);
+  if (
+    rawTemplateVars &&
+    rawTemplateVars !== "undefined" &&
+    rawTemplateVars.trim() !== ""
+  ) {
+    EMAIL_TEMPLATE_VARIABLES = JSON.parse(rawTemplateVars);
+    console.log('Parsed EMAIL_TEMPLATE_VARIABLES:', EMAIL_TEMPLATE_VARIABLES);
   } else {
-    console.warn('EMAIL_TEMPLATE_VARIABLES is undefined in environment. Using empty object.');
+    console.warn('EMAIL_TEMPLATE_VARIABLES is undefined, "undefined", or empty in environment. Using empty object.');
     EMAIL_TEMPLATE_VARIABLES = {};
   }
 } catch (e) {
