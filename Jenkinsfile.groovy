@@ -5,7 +5,7 @@ pipeline {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        BACKEND_HOST = '3.101.125.232' // Your backend EC2 public IP or DNS
+        BACKEND_HOST = '54.219.208.34' // Your backend EC2 public IP or DNS
         BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
     }
 
