@@ -1,13 +1,11 @@
 pipeline {
     agent any
 
-   
-
     environment {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        BACKEND_HOST = '52.53.175.254' // Your backend EC2 public IP or DNS and alo the instance 
+        BACKEND_HOST = '52.53.175.254' // Your backend EC2 public IP or DNS
         BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
     }
 
@@ -23,25 +21,24 @@ pipeline {
                     sh '''
                     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
                     docker build -t $ECR_REPO:$IMAGE_TAG .
+                    docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
                     docker push $ECR_REPO:$IMAGE_TAG
+                    docker push $ECR_REPO:latest
                     '''
                 }
             }
         }
         stage('Deploy Frontend to ECS') {
             steps {
+                // Update the ECS service to use the new image tag (forces a new deployment)
                 sh '''
                 aws ecs update-service --cluster Netflix-clone --service netflix-clone-service-1 \
                   --force-new-deployment --region $AWS_REGION \
                   --desired-count 1 \
                   --output json
-
-                # Update the service with the new image (forces new deployment with latest tag)
-                aws ecs update-service --cluster Netflix-clone --service netflix-clone-service-1 \
-                  --region $AWS_REGION \
-                  --force-new-deployment \
-                  --output json
                 '''
+                // Optionally, update the ECS task definition with the new image tag (recommended for precise deployments)
+                // See AWS docs or your own scripting for this step if needed.
             }
         }
         stage('Deploy Backend to EC2') {
@@ -60,7 +57,6 @@ pipeline {
 
                         npm install --production
 
-                        # Load .env variables into environment for PM2 (optional: for inline env use)
                         set -a
                         [ -f .env ] && . .env
                         set +a
