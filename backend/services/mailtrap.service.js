@@ -2,7 +2,14 @@
 
 // Load environment variables from .env file
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+// Explicitly resolve .env path as in env.config.js
+const envPath =
+  process.env.NODE_ENV === 'production'
+    ? path.resolve('.env')
+    : path.resolve('../.env');
+dotenv.config({ path: envPath });
 
 import axios from 'axios';
 import { getCurrentDateTime } from '../helpers/helper.js';
@@ -28,6 +35,9 @@ let EMAIL_TEMPLATE_VARIABLES = {};
 try {
   if (process.env.EMAIL_TEMPLATE_VARIABLES) {
     EMAIL_TEMPLATE_VARIABLES = JSON.parse(process.env.EMAIL_TEMPLATE_VARIABLES);
+  } else {
+    console.warn('EMAIL_TEMPLATE_VARIABLES is undefined in environment. Using empty object.');
+    EMAIL_TEMPLATE_VARIABLES = {};
   }
 } catch (e) {
   console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
