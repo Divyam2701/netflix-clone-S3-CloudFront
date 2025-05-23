@@ -47,10 +47,15 @@ pipeline {
                         head -20 .env || echo ".env missing!" &&
                         npm install --production
 
+                        # Load .env variables into environment for PM2
+                        set -a
+                        [ -f .env ] && . .env
+                        set +a
+
                         if pm2 list | grep -q "netflix-backend"; then
                             pm2 reload netflix-backend
                         else
-                            pm2 start npm --name "netflix-backend" -- run start
+                            pm2 start index.js --name "netflix-backend"
                         fi
                     '
                     '''
