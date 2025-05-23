@@ -38,7 +38,7 @@ pipeline {
                   --output json
                 '''
                 // Optionally, update the ECS task definition with the new image tag (recommended for precise deployments)
-                // See AWS docs or your own scripting for this step if needed.
+                // See AWS docs or your own scripting for this step if needed and it is complete.
             }
         }
         stage('Deploy Backend to EC2') {
