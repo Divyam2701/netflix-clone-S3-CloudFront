@@ -5,7 +5,7 @@ pipeline {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        BACKEND_HOST = '54.219.208.34'
+        BACKEND_HOST = '54.219.208.34' // Your backend EC2 public IP or DNS
         BACKEND_SSH_KEY = credentials('backend-ec2-ssh-key')
     }
 
@@ -34,12 +34,22 @@ pipeline {
                 '''
             }
         }
+        stage('Copy .env to EC2') {
+            steps {
+                // Make sure your Jenkins agent has backend/.env and has permissions to use the SSH key
+                sh '''
+                scp -i $BACKEND_SSH_KEY -o StrictHostKeyChecking=no backend/.env ubuntu@$BACKEND_HOST:/home/ubuntu/netflix-clone-S3-CloudFront/backend/.env
+                '''
+            }
+        }
         stage('Deploy Backend to EC2') {
             steps {
                 sshagent(['backend-ec2-ssh-key']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@$BACKEND_HOST '
                         cd /home/ubuntu/netflix-clone-S3-CloudFront/backend &&
+                        git reset --hard &&
+                        git clean -fd &&
                         git pull origin main &&
                         echo "==== .env (first lines) ====" &&
                         head -20 .env || echo ".env missing!" &&
