@@ -34,14 +34,6 @@ pipeline {
                 '''
             }
         }
-        stage('Copy .env to EC2') {
-            steps {
-                // Make sure your Jenkins agent has backend/.env and has permissions to use the SSH key
-                sh '''
-                scp -i $BACKEND_SSH_KEY -o StrictHostKeyChecking=no backend/.env ubuntu@$BACKEND_HOST:/home/ubuntu/netflix-clone-S3-CloudFront/backend/.env
-                '''
-            }
-        }
         stage('Deploy Backend to EC2') {
             steps {
                 sshagent(['backend-ec2-ssh-key']) {
