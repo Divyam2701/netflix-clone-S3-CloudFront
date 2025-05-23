@@ -54,6 +54,6 @@ scrape_configs:
     static_configs:
       - targets: ['10.0.0.26:8080'] 
         # How to set:
-        #   - Use the Jenkins EC2 instance's private IP.
+        #   - Use the Jenkins EC2 instance's pri IP.
         #   - 8080 is an example; check Jenkins Prometheus plugin config or exporter startup command for the actual port.
 
