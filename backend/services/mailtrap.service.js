@@ -3,12 +3,11 @@
 // Load environment variables from .env file
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Explicitly resolve .env path as in env.config.js
-const envPath =
-  process.env.NODE_ENV === 'production'
-    ? path.resolve('.env')
-    : path.resolve('../.env');
+// Always resolve .env from the backend directory
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.resolve(__dirname, '.env');
 dotenv.config({ path: envPath });
 
 import axios from 'axios';
