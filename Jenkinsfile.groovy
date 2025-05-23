@@ -1,11 +1,7 @@
 pipeline {
     agent any
 
-    // Automatically trigger pipeline on GitHub changes (poll every 2 minutes as fallback)
-    triggers {
-        pollSCM('H/2 * * * *')
-        // For best results, set up a GitHub webhook to trigger Jenkins on push events.
-    }
+   
 
     environment {
         AWS_REGION = 'us-west-1'
