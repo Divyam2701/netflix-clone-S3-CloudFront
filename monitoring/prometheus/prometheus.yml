@@ -46,7 +46,7 @@ scrape_configs:
     static_configs:
       - targets: ['10.0.0.26:9100'] 
         # How to set:
-        #   - Use the Jenkins EC2 instance's private IP.
+        #   - Use the Jenkins EC2 instance's IP.
         #   - 9100 is the default port for node exporter.
 
   # Jenkins EC2 instances - Jenkins exporter (if available)
