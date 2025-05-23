@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    // Automatically trigger pipeline on GitHub changes (poll every 2 minutes as fallback)
+    triggers {
+        pollSCM('H/2 * * * *')
+        // For best results, set up a GitHub webhook to trigger Jenkins on push events.
+    }
+
     environment {
         AWS_REGION = 'us-west-1'
         ECR_REPO = '971937583465.dkr.ecr.us-west-1.amazonaws.com/netflix-clone'
@@ -30,7 +36,15 @@ pipeline {
             steps {
                 sh '''
                 aws ecs update-service --cluster Netflix-clone --service netflix-clone-service-1 \
-                  --force-new-deployment --region $AWS_REGION
+                  --force-new-deployment --region $AWS_REGION \
+                  --desired-count 1 \
+                  --output json
+
+                # Update the service with the new image (forces new deployment with latest tag)
+                aws ecs update-service --cluster Netflix-clone --service netflix-clone-service-1 \
+                  --region $AWS_REGION \
+                  --force-new-deployment \
+                  --output json
                 '''
             }
         }

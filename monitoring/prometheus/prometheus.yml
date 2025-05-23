@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scrape your application's metrics endpoint
+  - job_name: 'netflix-clone-app'
+    static_configs:
+      - targets: ['<APP_SERVER_PRIVATE_IP>:<METRICS_PORT>'] 
+        # How to set:
+        #   - <APP_SERVER_PRIVATE_IP>: Go to AWS EC2/ECS console, find your app server, and copy its private IP.
+        #   - <METRICS_PORT>: Check your app's code/config for the port exposing metrics (e.g., 8000, 8080, 9100).
+        #     - For Python: look for start_http_server(port)
+        #     - For Node.js: check the listen() call or Dockerfile/compose for EXPOSE/ports.
+        #     - For ECS: check the service/task definition for port mappings.
+
+  # Scrape node exporter (system metrics on Jenkins EC2)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['10.0.0.26:9100'] 
+        # How to set:
+        #   - Use the Jenkins EC2 instance's private IP (find in AWS EC2 console).
+        #   - 9100 is the default port for node exporter.
+
+  # Backend EC2 instance - node exporter
+  - job_name: 'backend-ec2-node'
+    static_configs:
+      - targets: ['10.0.0.170:9100'] 
+        # How to set:
+        #   - Use the backend EC2 instance's private IP.
+        #   - 9100 is the default port for node exporter.
+
+  # Backend EC2 instance - application metrics (if available)
+  - job_name: 'backend-ec2-app'
+    static_configs:
+      - targets: ['10.0.0.170:8000'] 
+        # How to set:
+        #   - Use the backend EC2 instance's private IP.
+        #   - 8000 is an example; check your backend app code/config for the actual metrics port.
+
+  # Jenkins EC2 instances - node exporter (if you have more than one Jenkins EC2, list all IPs)
+  - job_name: 'jenkins-node'
+    static_configs:
+      - targets: ['10.0.0.26:9100'] 
+        # How to set:
+        #   - Use the Jenkins EC2 instance's private IP.
+        #   - 9100 is the default port for node exporter.
+
+  # Jenkins EC2 instances - Jenkins exporter (if available)
+  - job_name: 'jenkins-exporter'
+    static_configs:
+      - targets: ['10.0.0.26:8080'] 
+        # How to set:
+        #   - Use the Jenkins EC2 instance's private IP.
+        #   - 8080 is an example; check Jenkins Prometheus plugin config or exporter startup command for the actual port.
+
