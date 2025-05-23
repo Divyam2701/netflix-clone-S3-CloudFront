@@ -44,11 +44,13 @@ pipeline {
                         git clean -fd &&
                         git pull origin main &&
                         cd backend &&
-                        echo "==== .env (first lines) ====" &&
-                        head -20 .env || echo ".env missing!" &&
+
+                        echo "==== FULL .env FILE ====" &&
+                        cat .env || echo ".env missing!" &&
+
                         npm install --production
 
-                        # Load .env variables into environment for PM2
+                        # Load .env variables into environment for PM2 (optional: for inline env use)
                         set -a
                         [ -f .env ] && . .env
                         set +a
