@@ -37,22 +37,50 @@ const rawTemplateVars = process.env.EMAIL_TEMPLATE_VARIABLES;
 // Debug: Log the raw environment variable for troubleshooting
 console.log('Loaded EMAIL_TEMPLATE_VARIABLES raw value:', rawTemplateVars);
 
+// Try loading from .env file in parent directory if not found in current .env
 if (
-  rawTemplateVars &&
-  rawTemplateVars !== "undefined" &&
-  rawTemplateVars.trim() !== "" &&
-  rawTemplateVars.trim() !== undefined
+  (!rawTemplateVars || rawTemplateVars === "undefined" || rawTemplateVars.trim() === "" || rawTemplateVars.trim() === undefined)
+  && process.env.NODE_ENV !== "production"
 ) {
   try {
-    EMAIL_TEMPLATE_VARIABLES = JSON.parse(rawTemplateVars);
-    console.log('Parsed EMAIL_TEMPLATE_VARIABLES:', EMAIL_TEMPLATE_VARIABLES);
+    const fs = await import('fs');
+    const path = await import('path');
+    const parentEnvPath = path.resolve(__dirname, '../.env');
+    if (fs.existsSync(parentEnvPath)) {
+      const envContent = fs.readFileSync(parentEnvPath, 'utf-8');
+      const match = envContent.match(/^EMAIL_TEMPLATE_VARIABLES=(.*)$/m);
+      if (match && match[1]) {
+        const value = match[1].trim();
+        EMAIL_TEMPLATE_VARIABLES = JSON.parse(value);
+        console.log('Loaded EMAIL_TEMPLATE_VARIABLES from parent .env:', EMAIL_TEMPLATE_VARIABLES);
+      }
+    }
   } catch (e) {
-    console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
+    console.warn('Could not load EMAIL_TEMPLATE_VARIABLES from parent .env:', e.message);
+  }
+}
+
+if (
+  !EMAIL_TEMPLATE_VARIABLES ||
+  Object.keys(EMAIL_TEMPLATE_VARIABLES).length === 0
+) {
+  if (
+    rawTemplateVars &&
+    rawTemplateVars !== "undefined" &&
+    rawTemplateVars.trim() !== "" &&
+    rawTemplateVars.trim() !== undefined
+  ) {
+    try {
+      EMAIL_TEMPLATE_VARIABLES = JSON.parse(rawTemplateVars);
+      console.log('Parsed EMAIL_TEMPLATE_VARIABLES:', EMAIL_TEMPLATE_VARIABLES);
+    } catch (e) {
+      console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
+      EMAIL_TEMPLATE_VARIABLES = {};
+    }
+  } else {
+    console.warn('EMAIL_TEMPLATE_VARIABLES is undefined, "undefined", or empty in environment. Using empty object.');
     EMAIL_TEMPLATE_VARIABLES = {};
   }
-} else {
-  console.warn('EMAIL_TEMPLATE_VARIABLES is undefined, "undefined", or empty in environment. Using empty object.');
-  EMAIL_TEMPLATE_VARIABLES = {};
 }
 
 // -------------------------------------------------------------------

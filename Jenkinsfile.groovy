@@ -39,10 +39,11 @@ pipeline {
                 sshagent(['backend-ec2-ssh-key']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@$BACKEND_HOST '
-                        cd /home/ubuntu/netflix-clone-S3-CloudFront/backend &&
+                        cd /home/ubuntu/netflix-clone-S3-CloudFront &&
                         git reset --hard &&
                         git clean -fd &&
                         git pull origin main &&
+                        cd backend &&
                         echo "==== .env (first lines) ====" &&
                         head -20 .env || echo ".env missing!" &&
                         npm install --production
