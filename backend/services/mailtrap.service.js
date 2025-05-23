@@ -29,27 +29,29 @@ const EMAIL_TEMPLATE_IDS = {
   // If you have additional templates, define them here.
 };
 
-// --- Safe parsing for EMAIL_TEMPLATE_VARIABLES with logging and extra safety ---
+// --- Extra safe parsing for EMAIL_TEMPLATE_VARIABLES with logging and safety ---
+// This block will never let your app crash if the env var is missing or invalid.
 let EMAIL_TEMPLATE_VARIABLES = {};
 const rawTemplateVars = process.env.EMAIL_TEMPLATE_VARIABLES;
 
 // Debug: Log the raw environment variable for troubleshooting
 console.log('Loaded EMAIL_TEMPLATE_VARIABLES raw value:', rawTemplateVars);
 
-try {
-  if (
-    rawTemplateVars &&
-    rawTemplateVars !== "undefined" &&
-    rawTemplateVars.trim() !== ""
-  ) {
+if (
+  rawTemplateVars &&
+  rawTemplateVars !== "undefined" &&
+  rawTemplateVars.trim() !== "" &&
+  rawTemplateVars.trim() !== undefined
+) {
+  try {
     EMAIL_TEMPLATE_VARIABLES = JSON.parse(rawTemplateVars);
     console.log('Parsed EMAIL_TEMPLATE_VARIABLES:', EMAIL_TEMPLATE_VARIABLES);
-  } else {
-    console.warn('EMAIL_TEMPLATE_VARIABLES is undefined, "undefined", or empty in environment. Using empty object.');
+  } catch (e) {
+    console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
     EMAIL_TEMPLATE_VARIABLES = {};
   }
-} catch (e) {
-  console.error("Invalid EMAIL_TEMPLATE_VARIABLES in .env:", e.message);
+} else {
+  console.warn('EMAIL_TEMPLATE_VARIABLES is undefined, "undefined", or empty in environment. Using empty object.');
   EMAIL_TEMPLATE_VARIABLES = {};
 }
 
